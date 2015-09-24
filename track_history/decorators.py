@@ -3,6 +3,7 @@ from functools import partial
 
 from .handlers import store_initial, action_receiver, DeferredSignalWrapper
 from .signals import post_init_signals, save_signals, delete_signals
+from track_history.manager import TrackHistoryDescriptor
 
 
 def track(model=None, fields=(), exclude=()):
@@ -29,6 +30,10 @@ def track(model=None, fields=(), exclude=()):
 
     # Hack model to inherent from DeferredSignalWrapper
     model.__bases__ = (DeferredSignalWrapper,) + model.__bases__
+
+    # Add query manager
+    descriptor = TrackHistoryDescriptor(model)
+    setattr(model, 'history', descriptor)
 
     return model
 
