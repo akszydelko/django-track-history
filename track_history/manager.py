@@ -4,7 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.encoding import force_text
 
-from track_history.models import HistoryTrackRecord, has_int_pk
+from track_history.models import TrackHistoryRecord, has_int_pk
 
 
 class TrackHistoryDescriptor(object):
@@ -40,7 +40,7 @@ class TrackHistoryManager(models.Manager):
                 defer.append('object_id_int')
                 filters['object_id'] = force_text(self.instance.pk)
 
-        return HistoryTrackRecord.objects.defer(*defer).filter(**filters)
+        return TrackHistoryRecord.objects.defer(*defer).filter(**filters)
 
     # Dates
     def after_date(self, date):

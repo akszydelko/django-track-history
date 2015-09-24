@@ -6,7 +6,7 @@ from django.db.models.signals import post_save, post_delete
 from django.db.models.query_utils import DeferredAttribute
 from django.utils.encoding import force_text
 
-from .models import has_int_pk, HistoryTrackRecord
+from .models import has_int_pk, TrackHistoryRecord
 
 
 class TrackHelper(object):
@@ -31,7 +31,7 @@ class TrackHelper(object):
         return fields
 
     def store_current_state(self, record_type=None):
-        if record_type == HistoryTrackRecord.RECORD_TYPES.deleted or not self.tracked_instance.pk:
+        if record_type == TrackHistoryRecord.RECORD_TYPES.deleted or not self.tracked_instance.pk:
             self.initial_values = {}
         else:
             self.initial_values = self.get_current_state()
@@ -62,13 +62,13 @@ class TrackHelper(object):
     def signal_receiver(self, instance, signal, **kwargs):
         if self.tracked_instance is not instance:
             raise Exception('Something is wrong with tracked instance')
-        record_type = HistoryTrackRecord.RECORD_TYPES.modified
+        record_type = TrackHistoryRecord.RECORD_TYPES.modified
 
         if signal == post_save:
             if kwargs.get('created', False):
-                record_type = HistoryTrackRecord.RECORD_TYPES.created
+                record_type = TrackHistoryRecord.RECORD_TYPES.created
         elif signal == post_delete:
-            record_type = HistoryTrackRecord.RECORD_TYPES.deleted
+            record_type = TrackHistoryRecord.RECORD_TYPES.deleted
 
         self.create_history_track_record(record_type, kwargs.get('using', None))
 
@@ -95,7 +95,7 @@ class TrackHelper(object):
 
     def create_history_track_record(self, record_type, db=None):
         record_data = self.get_history_track_data(record_type, db)
-        HistoryTrackRecord.objects.create(**record_data)
+        TrackHistoryRecord.objects.create(**record_data)
         self.store_current_state(record_type)
 
     def get_related_user(self):

@@ -13,7 +13,7 @@ UserModel = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
 
 @python_2_unicode_compatible
-class HistoryTrackRecord(models.Model):
+class TrackHistoryRecord(models.Model):
     RECORD_TYPES = Choices(
         (0, 'created', _("Created")),
         (1, 'modified', _("Modified")),
