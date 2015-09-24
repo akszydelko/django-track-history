@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+import threading
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models.signals import post_save, post_delete
@@ -9,6 +10,7 @@ from .models import has_int_pk, HistoryTrackRecord
 
 
 class TrackHelper(object):
+    thread = threading.local()
     initial_values = {}
 
     def __init__(self, tracked_instance, fields, exclude):
@@ -87,10 +89,20 @@ class TrackHelper(object):
             "content_type": content_type,
             "record_type": record_type,
             "history_data": self.get_current_state(),
-            "changes": self.changes()
+            "changes": self.changes(),
+            "user": self.get_related_user()
         }
 
     def create_history_track_record(self, record_type, db=None):
         record_data = self.get_history_track_data(record_type, db)
         HistoryTrackRecord.objects.create(**record_data)
         self.store_current_state(record_type)
+
+    def get_related_user(self):
+        """Get the modifying user from middleware."""
+        try:
+            if self.thread.user.is_authenticated():
+                return self.thread.user
+            return None
+        except AttributeError:
+            return None
