@@ -3,7 +3,7 @@ from functools import partial
 
 from .handlers import store_initial, action_receiver, DeferredSignalWrapper
 from .signals import post_init_signals, save_signals, delete_signals
-from track_history.manager import TrackHistoryDescriptor
+from .manager import TrackHistoryDescriptor
 
 
 def track(model=None, fields=(), exclude=()):

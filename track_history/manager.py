@@ -1,10 +1,17 @@
 from __future__ import unicode_literals
 
 from django.contrib.contenttypes.models import ContentType
-from django.db import models
+from django.db.models import Manager
+from django.db.models.loading import get_model
 from django.utils.encoding import force_text
+from django.utils.functional import SimpleLazyObject
 
-from track_history.models import TrackHistoryRecord, has_int_pk
+from .query import SnapshotQuerySet
+from .utils import has_int_pk
+
+
+# Import model in a different way, because of circular imports
+TrackHistoryRecord = SimpleLazyObject(lambda: get_model(__name__, 'TrackHistoryRecord'))
 
 
 class TrackHistoryDescriptor(object):
@@ -17,7 +24,7 @@ class TrackHistoryDescriptor(object):
         return TrackHistoryManager(self.model, instance)
 
 
-class TrackHistoryManager(models.Manager):
+class TrackHistoryManager(Manager):
     def __init__(self, model, instance=None):
         super(TrackHistoryManager, self).__init__()
         self.model = model
@@ -64,3 +71,28 @@ class TrackHistoryManager(models.Manager):
     def get_field_history(self, field_name):
         return self.get_queryset().filter(changes__has=field_name)
 
+
+class CreateAndReadOnlyManager(Manager):
+    def get_or_create(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def delete(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def update(self, *args, **kwargs):
+        raise NotImplementedError
+
+
+class TrackHistorySnapshotManager(CreateAndReadOnlyManager):
+    def __init__(self, *args, **kwargs):
+        super(TrackHistorySnapshotManager, self).__init__(*args, **kwargs)
+        self._queryset_class = SnapshotQuerySet
+
+    def bulk_create(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def create(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def create_snapshot_for_model(self, **kwargs):
+        return self.get_queryset().create_snapshot_for_model(**kwargs)

@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from django.db import models
+from django.db import models, transaction
 
 from .signals import th_post_init_deferred, th_post_save_deferred
 from .tracker import TrackHelper
@@ -27,3 +27,15 @@ class DeferredSignalWrapper(models.Model):
         if self._deferred:
             th_post_save_deferred.send(sender=self._meta.concrete_model, instance=self, created=False,
                                        update_fields=kwargs.get('update_fields', None), using=kwargs.get('using', None))
+
+    def save(self, *args, **kwargs):
+        # Prevent any changes if model or one of history model will not save properly
+        with transaction.atomic(using=kwargs.get('using', None)):
+            try:
+                super(DeferredSignalWrapper, self).save(*args, **kwargs)
+            except:
+                transaction.rollback(using=kwargs.get('using', None))
+                raise
+
+    class Meta:
+        abstract = True

@@ -2,11 +2,13 @@ from __future__ import unicode_literals
 import threading
 
 from django.contrib.contenttypes.models import ContentType
-from django.db.models.signals import post_save, post_delete
+from django.db.models import FileField
 from django.db.models.query_utils import DeferredAttribute
 from django.utils.encoding import force_text
+from track_history.signals import save_signals, delete_signals
 
-from .models import has_int_pk, TrackHistoryRecord
+from .models import TrackHistoryRecord
+from .utils import has_int_pk
 
 
 class TrackHelper(object):
@@ -20,13 +22,32 @@ class TrackHelper(object):
 
         self.store_current_state()
 
+    def prepare_attribute_for_json(self, field):
+        if hasattr(self.tracked_instance, '_th_prepare_%s_for_json' % field.name):
+            return getattr(self.tracked_instance, '_th_prepare_%s_for_json' % field.name)()
+        elif hasattr(self.tracked_instance, '_th_prepare_attribute_for_json'):
+            return getattr(self.tracked_instance, '_th_prepare_attribute_for_json')(field)
+
+        value = getattr(self.tracked_instance, field.attname)
+        if isinstance(field, FileField):
+            return value.url if value else None
+
+        # Foreign fields require special care because we don't want to trigger a database query when the field is
+        # not yet cached.
+        # if field.rel and field.get_attname_column()[1]:
+        #     fields[field.name] = getattr(self.tracked_instance, field.get_attname_column()[1])
+        # descriptor = self.tracked_instance.__class__.__dict__[field.name]
+        # if hasattr(self.tracked_instance, descriptor.cache_name):
+        #     fields[field.name] = getattr(self.tracked_instance, descriptor.cache_name)
+        return value
+
     def get_current_state(self):
         """Returns a ``field -> value`` dict of the current state of the instance."""
         fields = {}
         for field in self.get_tracked_fields():
             # It's always safe to access the field attribute name, it refers to simple types that are immediately
             # available on the instance.
-            fields[field.attname] = getattr(self.tracked_instance, field.attname)
+            fields[field.attname] = self.prepare_attribute_for_json(field)
 
         return fields
 
@@ -37,12 +58,11 @@ class TrackHelper(object):
             self.initial_values = self.get_current_state()
 
     def get_tracked_fields(self):
-        fields = self.tracked_instance._meta.local_fields
+        fields = self.tracked_instance._meta.concrete_model._meta.local_fields
 
         if self.tracked_instance._deferred:
-            fields = filter(lambda field:
-                            not isinstance(self.tracked_instance.__class__.__dict__.get(field.attname), DeferredAttribute),
-                            self.tracked_instance._meta.concrete_model._meta.local_fields)
+            fields = filter(lambda field: not isinstance(
+                self.tracked_instance.__class__.__dict__.get(field.attname), DeferredAttribute), fields)
 
         if self.fields:
             return filter(lambda x: x.name in self.fields, fields)
@@ -62,12 +82,18 @@ class TrackHelper(object):
     def signal_receiver(self, instance, signal, **kwargs):
         if self.tracked_instance is not instance:
             raise Exception('Something is wrong with tracked instance')
+
+        # if signal in pre_edit_signals:
+        #     self.create_history_snapshot_record(model=self.tracked_instance.__class__, row_id=self.tracked_instance.id,
+        #                                         db=kwargs.get('using', None))
+        #     return
+
         record_type = TrackHistoryRecord.RECORD_TYPES.modified
 
-        if signal == post_save:
+        if signal in save_signals:
             if kwargs.get('created', False):
                 record_type = TrackHistoryRecord.RECORD_TYPES.created
-        elif signal == post_delete:
+        elif signal in delete_signals:
             record_type = TrackHistoryRecord.RECORD_TYPES.deleted
 
         self.create_history_track_record(record_type, kwargs.get('using', None))
@@ -88,10 +114,16 @@ class TrackHelper(object):
             "object_id_int": object_id_int,
             "content_type": content_type,
             "record_type": record_type,
-            "history_data": self.get_current_state(),
+            # "history_data": self.get_current_state(),
             "changes": self.changes(),
             "user": self.get_related_user()
         }
+
+    # def create_history_snapshot_record(self, model, row_id, db=None):
+    #     snapshot_id = TrackHistoryFullSnapshot.objects.create_snapshot_for_model(model=model, row_id=row_id)
+    #     if not snapshot_id:
+    #         raise OperationalError("Snapshot was not saved properly.")
+    #     self.full_snapshot_id = snapshot_id
 
     def create_history_track_record(self, record_type, db=None):
         record_data = self.get_history_track_data(record_type, db)
