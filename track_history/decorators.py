@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 from functools import partial
 
 from .handlers import store_initial, action_receiver, DeferredSignalWrapper
-from .signals import post_init_signals, save_signals, delete_signals
+from .signals import init_signals, save_signals, delete_signals
 from .manager import TrackHistoryDescriptor
 
 
@@ -20,7 +20,7 @@ def track(model=None, fields=(), exclude=()):
     }
 
     # Connect to signals
-    for signal in post_init_signals:
+    for signal in init_signals:
         signal.connect(partial(store_initial, **attrs), sender=model, weak=False,
                        dispatch_uid='django-track-history-%s' % model.__name__)
 

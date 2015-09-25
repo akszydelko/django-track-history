@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
-from django.db import models, transaction
+from django.db import models, transaction, router
 
 from .signals import th_post_init_deferred, th_post_save_deferred
+from .deletion import CustomDeletionCollector
 from .tracker import TrackHelper
 
 
@@ -36,6 +37,17 @@ class DeferredSignalWrapper(models.Model):
             except:
                 transaction.rollback(using=kwargs.get('using', None))
                 raise
+
+    def delete(self, using=None):
+        using = using or router.db_for_write(self.__class__, instance=self)
+        assert self._get_pk_val() is not None, (
+            "%s object can't be deleted because its %s attribute is set to None." %
+            (self._meta.object_name, self._meta.pk.attname)
+        )
+
+        collector = CustomDeletionCollector(using=using)  # The only modification, the rest copied from models.Model
+        collector.collect([self])
+        collector.delete()
 
     class Meta:
         abstract = True
