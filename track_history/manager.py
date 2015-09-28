@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+from operator import attrgetter
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Manager
@@ -7,7 +8,7 @@ from django.utils.encoding import force_text
 from django.utils.functional import SimpleLazyObject
 
 from .query import SnapshotQuerySet
-from .utils import has_int_pk
+from .utils import has_int_pk, ContributorList
 
 
 # Import model in a different way, because of circular imports
@@ -70,6 +71,38 @@ class TrackHistoryManager(Manager):
     # Fields
     def get_field_history(self, field_name):
         return self.get_queryset().filter(changes__has=field_name)
+
+    # Editors
+    def get_contributors(self, user_query_only=()):
+        if isinstance(user_query_only, (list, tuple)):
+            user_query_only = ['user__' + x for x in user_query_only]
+
+        # We can not distinct users and order by date, so we will distinct users in the db query and order by date
+        # by ourselves, which should be faster when model will have many history records.
+        qs = sorted(self.get_queryset().only('user', 'date_created', 'record_type', *user_query_only)
+                    .select_related('user').distinct('user_id').order_by('user_id', 'record_type'),
+                    key=attrgetter('date_created'))
+
+        editors = []
+        creator = None
+        for history_record in qs:
+            if history_record.record_type == TrackHistoryRecord.RECORD_TYPES.created:
+                creator = history_record.user
+            editors.append(history_record.user)
+
+        return ContributorList(creator=creator, editors=editors)
+
+    def get_creator(self, user_query_only=()):
+        if not self.instance:
+            return None
+
+        if isinstance(user_query_only, (list, tuple)):
+            user_query_only = ['user__' + x for x in user_query_only]
+
+        thr = self.get_queryset().only('user', *user_query_only).filter(
+            record_type=TrackHistoryRecord.RECORD_TYPES.created).select_related('user').order_by('date_created').first()
+
+        return thr.user if thr else None
 
 
 class CreateAndReadOnlyManager(Manager):
