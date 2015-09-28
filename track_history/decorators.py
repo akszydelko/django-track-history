@@ -7,12 +7,12 @@ from .manager import TrackHistoryDescriptor
 from .settings import TH_DEFAULT_EXCLUDE_FIELDS
 
 
-def track(model=None, fields=(), exclude=()):
+def track_changes(model=None, fields=(), exclude=()):
     if fields and exclude:
         raise AttributeError("Attributes fields and exclude can not be specified together. Use only one of them.")
 
     if model is None:
-        return partial(track, fields=fields, exclude=exclude)
+        return partial(track_changes, fields=fields, exclude=exclude)
 
     # Remove possible duplications
     attrs = {
@@ -40,5 +40,5 @@ def track(model=None, fields=(), exclude=()):
 
 
 __all__ = [
-    'track'
+    'track_changes'
 ]

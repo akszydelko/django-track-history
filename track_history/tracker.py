@@ -87,9 +87,6 @@ class TrackHelper(object):
 
         self.create_history_track_record(record_type, kwargs.get('using', None))
 
-    def _update_track_helper(self):
-        raise NotImplementedError
-
     def get_history_track_data(self, record_type, db=None):
         """Creates the version data to be saved to the history track record model."""
         object_id = force_text(self.tracked_instance.pk)
