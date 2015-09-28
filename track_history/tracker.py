@@ -28,25 +28,18 @@ class TrackHelper(object):
         elif hasattr(self.tracked_instance, '_th_prepare_attribute_for_json'):
             return getattr(self.tracked_instance, '_th_prepare_attribute_for_json')(field)
 
+        # It's always safe to access the field attribute name, it refers to simple types that are immediately
+        # available on the instance.
         value = getattr(self.tracked_instance, field.attname)
         if isinstance(field, FileField):
             return value.url if value else None
 
-        # Foreign fields require special care because we don't want to trigger a database query when the field is
-        # not yet cached.
-        # if field.rel and field.get_attname_column()[1]:
-        #     fields[field.name] = getattr(self.tracked_instance, field.get_attname_column()[1])
-        # descriptor = self.tracked_instance.__class__.__dict__[field.name]
-        # if hasattr(self.tracked_instance, descriptor.cache_name):
-        #     fields[field.name] = getattr(self.tracked_instance, descriptor.cache_name)
         return value
 
     def get_current_state(self):
         """Returns a ``field -> value`` dict of the current state of the instance."""
         fields = {}
         for field in self.get_tracked_fields():
-            # It's always safe to access the field attribute name, it refers to simple types that are immediately
-            # available on the instance.
             fields[field.attname] = self.prepare_attribute_for_json(field)
 
         return fields
@@ -81,12 +74,7 @@ class TrackHelper(object):
 
     def signal_receiver(self, instance, signal, **kwargs):
         if self.tracked_instance is not instance:
-            raise Exception('Something is wrong with tracked instance')
-
-        # if signal in pre_edit_signals:
-        #     self.create_history_snapshot_record(model=self.tracked_instance.__class__, row_id=self.tracked_instance.id,
-        #                                         db=kwargs.get('using', None))
-        #     return
+            raise AssertionError('Something is wrong with tracked instance, got different object then expected.')
 
         record_type = TrackHistoryRecord.RECORD_TYPES.modified
 
@@ -114,16 +102,9 @@ class TrackHelper(object):
             "object_id_int": object_id_int,
             "content_type": content_type,
             "record_type": record_type,
-            # "history_data": self.get_current_state(),
             "changes": self.changes(),
             "user": self.get_related_user()
         }
-
-    # def create_history_snapshot_record(self, model, row_id, db=None):
-    #     snapshot_id = TrackHistoryFullSnapshot.objects.create_snapshot_for_model(model=model, row_id=row_id)
-    #     if not snapshot_id:
-    #         raise OperationalError("Snapshot was not saved properly.")
-    #     self.full_snapshot_id = snapshot_id
 
     def create_history_track_record(self, record_type, db=None):
         record_data = self.get_history_track_data(record_type, db)
