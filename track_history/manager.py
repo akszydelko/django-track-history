@@ -11,7 +11,7 @@ from .utils import has_int_pk
 
 
 # Import model in a different way, because of circular imports
-TrackHistoryRecord = SimpleLazyObject(lambda: get_model(__name__, 'TrackHistoryRecord'))
+TrackHistoryRecord = SimpleLazyObject(lambda: get_model(__package__, 'TrackHistoryRecord'))
 
 
 class TrackHistoryDescriptor(object):
@@ -34,7 +34,7 @@ class TrackHistoryManager(Manager):
         return ContentType.objects.get_for_model(self.model)
 
     def get_queryset(self):
-        defer = ['history_data']
+        defer = []
         filters = {
             'content_type': self.get_class_content_type()
         }
