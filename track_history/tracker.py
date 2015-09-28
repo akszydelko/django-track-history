@@ -58,9 +58,10 @@ class TrackHelper(object):
                 self.tracked_instance.__class__.__dict__.get(field.attname), DeferredAttribute), fields)
 
         if self.fields:
-            return filter(lambda x: x.name in self.fields, fields)
-        elif self.exclude:
-            return filter(lambda x: x.name not in self.exclude, fields)
+            fields = filter(lambda x: x.name in self.fields, fields)
+
+        if self.exclude:
+            fields = filter(lambda x: x.name not in self.exclude, fields)
 
         return fields
 

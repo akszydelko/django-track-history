@@ -4,6 +4,7 @@ from functools import partial
 from .handlers import store_initial, action_receiver, DeferredSignalWrapper
 from .signals import init_signals, save_signals, delete_signals
 from .manager import TrackHistoryDescriptor
+from .settings import TH_DEFAULT_EXCLUDE_FIELDS
 
 
 def track(model=None, fields=(), exclude=()):
@@ -16,7 +17,7 @@ def track(model=None, fields=(), exclude=()):
     # Remove possible duplications
     attrs = {
         '_th_fields': tuple(set(fields)),
-        '_th_exclude': tuple(set(exclude))
+        '_th_exclude': tuple(set(exclude + TH_DEFAULT_EXCLUDE_FIELDS))
     }
 
     # Connect to signals
