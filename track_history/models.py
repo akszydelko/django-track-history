@@ -23,6 +23,9 @@ class TrackHistoryFullSnapshot(models.Model):
     def __str__(self):
         return "Fill snapshot of track history record with id %d" % self.track_history_record_id
 
+    class Meta:
+        app_label = 'track_history'
+
 
 @python_2_unicode_compatible
 class TrackHistoryRecord(models.Model):
@@ -60,3 +63,6 @@ class TrackHistoryRecord(models.Model):
             raise OperationalError("Snapshot was not saved properly.")
         self.full_snapshot_id = snapshot_id
         super(TrackHistoryRecord, self).save(*args, **kwargs)
+
+    class Meta:
+        app_label = 'track_history'

@@ -3,7 +3,7 @@ from operator import attrgetter
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Manager
-from django.db.models.loading import get_model
+from django.apps import apps
 from django.utils.encoding import force_text
 from django.utils.functional import SimpleLazyObject
 
@@ -12,7 +12,7 @@ from .utils import has_int_pk, ContributorList
 
 
 # Import model in a different way, because of circular imports
-TrackHistoryRecord = SimpleLazyObject(lambda: get_model(__package__, 'TrackHistoryRecord'))
+TrackHistoryRecord = SimpleLazyObject(lambda: apps.get_model(__package__, 'TrackHistoryRecord'))
 
 
 class TrackHistoryDescriptor(object):
