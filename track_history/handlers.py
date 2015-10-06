@@ -32,11 +32,7 @@ class DeferredSignalWrapper(models.Model):
     def save(self, *args, **kwargs):
         # Prevent any changes if model or one of history model will not save properly
         with transaction.atomic(using=kwargs.get('using', None)):
-            try:
-                super(DeferredSignalWrapper, self).save(*args, **kwargs)
-            except:
-                transaction.rollback(using=kwargs.get('using', None))
-                raise
+            super(DeferredSignalWrapper, self).save(*args, **kwargs)
 
     def delete(self, using=None):
         using = using or router.db_for_write(self.__class__, instance=self)
