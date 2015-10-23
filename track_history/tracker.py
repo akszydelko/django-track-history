@@ -65,13 +65,16 @@ class TrackHelper(object):
 
         return fields
 
-    def changes(self):
+    def changes(self, record_type):
         """
         Returns a ``field -> (previous value, current value)`` dict of changes
         from the previous state to the current state.
         """
-        current = self.get_current_state()
-        return {key: (was, current[key]) for key, was in self.initial_values.iteritems() if was != current[key]}
+        old = self.initial_values
+        new = self.get_current_state() if record_type != TrackHistoryRecord.RECORD_TYPES.deleted else {}
+        d = {key: (old.get(key, None), current) for key, current in new.iteritems() if current != old.get(key, None)}
+        d.update({key: (was, new.get(key, None)) for key, was in old.iteritems() if was != new.get(key, None)})
+        return d
 
     def signal_receiver(self, instance, signal, **kwargs):
         if self.tracked_instance is not instance:
@@ -100,7 +103,7 @@ class TrackHelper(object):
             "object_id_int": object_id_int,
             "content_type": content_type,
             "record_type": record_type,
-            "changes": self.changes(),
+            "changes": self.changes(record_type),
             "user": self.get_related_user()
         }
 

@@ -9,7 +9,7 @@ from django_pgjsonb import JSONField as JSONBField
 from django.utils.translation import ugettext_lazy as _
 from model_utils.choices import Choices
 
-from .manager import CreateAndReadOnlyManager, TrackHistorySnapshotManager
+from .manager import TrackHistorySnapshotManager, TrackHistoryRecordManager
 
 UserModel = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
@@ -50,7 +50,7 @@ class TrackHistoryRecord(models.Model):
     # A link to the current instance
     current_instance = GenericForeignKey(ct_field="content_type", fk_field="object_id")
 
-    objects = CreateAndReadOnlyManager()
+    objects = TrackHistoryRecordManager()
 
     def __str__(self):
         return "History track record of %s(%s)" % (

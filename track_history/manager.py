@@ -25,7 +25,26 @@ class TrackHistoryDescriptor(object):
         return TrackHistoryManager(self.model, instance)
 
 
-class TrackHistoryManager(Manager):
+class DateManager(Manager):
+    def after_date(self, date):
+        return self.in_dates(from_date=date)
+
+    def before_date(self, date):
+        return self.in_dates(to_date=date)
+
+    def in_dates(self, from_date=None, to_date=None):
+        qs = self.get_queryset()
+
+        if from_date:
+            qs = qs.filter(date_created__gte=from_date)
+
+        if to_date:
+            qs = qs.filter(date_created__lte=to_date)
+
+        return qs
+
+
+class TrackHistoryManager(DateManager):
     def __init__(self, model, instance=None):
         super(TrackHistoryManager, self).__init__()
         self.model = model
@@ -49,24 +68,6 @@ class TrackHistoryManager(Manager):
                 filters['object_id'] = force_text(self.instance.pk)
 
         return TrackHistoryRecord.objects.defer(*defer).filter(**filters)
-
-    # Dates
-    def after_date(self, date):
-        return self.in_dates(from_date=date)
-
-    def before_date(self, date):
-        return self.in_dates(to_date=date)
-
-    def in_dates(self, from_date=None, to_date=None):
-        qs = self.get_queryset()
-
-        if from_date:
-            qs = qs.filter(date_created__gte=from_date)
-
-        if to_date:
-            qs = qs.filter(date_created__lte=to_date)
-
-        return qs
 
     # Fields
     def get_field_history(self, field_name):
@@ -114,6 +115,10 @@ class CreateAndReadOnlyManager(Manager):
 
     def update(self, *args, **kwargs):
         raise NotImplementedError
+
+
+class TrackHistoryRecordManager(CreateAndReadOnlyManager, DateManager):
+    pass
 
 
 class TrackHistorySnapshotManager(CreateAndReadOnlyManager):
