@@ -91,7 +91,7 @@ class TrackHistoryManager(DateManager):
                 creator = history_record.user
             editors.append(history_record.user)
 
-        return ContributorList(creator=creator, editors=editors)
+        return ContributorList(creator=creator, editors=filter(lambda x: x, editors))
 
     def get_creator(self, user_query_only=()):
         if not self.instance:
