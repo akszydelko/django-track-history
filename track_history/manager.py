@@ -122,9 +122,7 @@ class TrackHistoryRecordManager(CreateAndReadOnlyManager, DateManager):
 
 
 class TrackHistorySnapshotManager(CreateAndReadOnlyManager, Manager):
-    def __init__(self, *args, **kwargs):
-        super(TrackHistorySnapshotManager, self).__init__(*args, **kwargs)
-        self._queryset_class = SnapshotQuerySet
+    _queryset_class = SnapshotQuerySet
 
     def bulk_create(self, *args, **kwargs):
         raise NotImplementedError

@@ -23,8 +23,8 @@ class TrackHelper(object):
         self.store_current_state()
 
     def prepare_attribute_for_json(self, field):
-        if hasattr(self.tracked_instance, '_th_prepare_%s_for_json' % field.name):
-            return getattr(self.tracked_instance, '_th_prepare_%s_for_json' % field.name)()
+        if hasattr(self.tracked_instance, '_th_prepare_{}_for_json'.format(field.name)):
+            return getattr(self.tracked_instance, '_th_prepare_{}_for_json'.format(field.name))()
         elif hasattr(self.tracked_instance, '_th_prepare_attribute_for_json'):
             return getattr(self.tracked_instance, '_th_prepare_attribute_for_json')(field)
 
@@ -97,12 +97,12 @@ class TrackHelper(object):
         else:
             object_id_int = None
         return {
-            "object_id": object_id,
-            "object_id_int": object_id_int,
-            "content_type": content_type,
-            "record_type": record_type,
-            "changes": self.changes(record_type),
-            "user": self.get_related_user()
+            'object_id': object_id,
+            'object_id_int': object_id_int,
+            'content_type': content_type,
+            'record_type': record_type,
+            'changes': self.changes(record_type),
+            'user': self.get_related_user()
         }
 
     def create_history_track_record(self, record_type, db=None):

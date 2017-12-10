@@ -2,12 +2,12 @@ from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 from track_history.models import TrackHistoryRecord
 
-from .models import Author
+from ..models import Author
 
 
 class BasicOperationsTestCase(TestCase):
     def test_object_creation(self):
-        christie = Author.objects.create(name="Christie", genre=Author.GENRE_CHOICES.drama)
+        christie = Author.objects.create(name='Christie', genre=Author.GENRE_CHOICES.drama)
         christie_history = christie.history.last()
 
         self.assertEqual(christie.history.count(), 1)
@@ -31,7 +31,7 @@ class BasicOperationsTestCase(TestCase):
         )
 
     def test_object_modifications(self):
-        king = Author.objects.create(name="King", genre=Author.GENRE_CHOICES.drama)
+        king = Author.objects.create(name='King', genre=Author.GENRE_CHOICES.drama)
         king.genre = Author.GENRE_CHOICES.comedy
         king.save()
 
@@ -102,7 +102,7 @@ class BasicOperationsTestCase(TestCase):
         )
 
     def test_object_deletion(self):
-        gordon = Author.objects.create(name="Gordon")
+        gordon = Author.objects.create(name='Gordon')
         object_id = gordon.id
         history_qs = TrackHistoryRecord.objects.filter(content_type=ContentType.objects.get_for_model(gordon), object_id_int=object_id)
         gordon.delete()
@@ -132,7 +132,7 @@ class BasicOperationsTestCase(TestCase):
 
 class BasicOperationsOnDeferredModelTestCase(TestCase):
     def test_deferred_object_modifications(self):
-        king = Author.objects.create(name="King", genre=Author.GENRE_CHOICES.drama)
+        king = Author.objects.create(name='King', genre=Author.GENRE_CHOICES.drama)
         king = Author.objects.only('genre').get(pk=king.pk)
         king.genre = Author.GENRE_CHOICES.comedy
         king.save()
@@ -162,17 +162,17 @@ class FailingOperationsTestCase(TestCase):
     def test_failed_object_creation(self):
         with self.settings(TH_RECORD_MODEL='bookshop.utils.CreationFailTestingTrackHistoryRecord'):
             try:
-                Author.objects.create(name="Smith")
+                Author.objects.create(name='Smith')
                 self.fail('Expected Exception did not occurred.')
             except RuntimeError:
                 pass
 
         with self.assertRaises(Author.DoesNotExist):
-            Author.objects.get(name="Smith")
+            Author.objects.get(name='Smith')
 
     def test_failed_object_modifications(self):
         with self.settings(TH_RECORD_MODEL='bookshop.utils.ModificationFailTestingTrackHistoryRecord'):
-            author = Author.objects.create(name="Joe")
+            author = Author.objects.create(name='Joe')
             try:
                 author.genre = Author.GENRE_CHOICES.drama
                 author.save()
@@ -182,7 +182,7 @@ class FailingOperationsTestCase(TestCase):
 
         self.assertEqual(author.genre, Author.GENRE_CHOICES.drama)
 
-        true_author = Author.objects.get(name="Joe")
+        true_author = Author.objects.get(name='Joe')
         self.assertEqual(true_author.genre, Author.GENRE_CHOICES.comedy)
 
     # TODO: Implement failed object deletion tests
@@ -195,3 +195,8 @@ class FailingOperationsTestCase(TestCase):
     # into an atomic block, so technically the data should be consistent
     # if an error during deletion will occur.
     # See: django.db.models.deletion.Collector#delete function
+
+
+
+# TODO: Set current user tests
+# TODO: CreateAndReadOnlyManager tests

@@ -102,10 +102,10 @@ WSGI_APPLICATION = 'project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': os.environ.get("TH_DJANGO_DATABASE_NAME", "track_history_example"),
-        'USER': os.environ.get("TH_DJANGO_DATABASE_USER", getpass.getuser()),
-        'PASSWORD': os.environ.get("TH_DJANGO_DATABASE_PASSWORD", ''),
-        'HOST': os.environ.get("TH_DJANGO_DATABASE_HOST", 'localhost'),
-        'PORT': os.environ.get("TH_DJANGO_DATABASE_PORT", '5432'),
+        'NAME': os.environ.get('TH_DJANGO_DATABASE_NAME', 'track_history_example'),
+        'USER': os.environ.get('TH_DJANGO_DATABASE_USER', getpass.getuser()),
+        'PASSWORD': os.environ.get('TH_DJANGO_DATABASE_PASSWORD', ''),
+        'HOST': os.environ.get('TH_DJANGO_DATABASE_HOST', 'localhost'),
+        'PORT': os.environ.get('TH_DJANGO_DATABASE_PORT', '5432'),
     }
 }
