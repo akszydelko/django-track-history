@@ -1,50 +1,29 @@
 from __future__ import unicode_literals
+
 from operator import attrgetter
 
-from django.contrib.contenttypes.models import ContentType
-from django.db.models import Manager
 from django.apps import apps
+from django.contrib.contenttypes.models import ContentType
+from django.db.models.manager import BaseManager
 from django.utils.encoding import force_text
 from django.utils.functional import SimpleLazyObject
 
-from .query import SnapshotQuerySet
+from .query import TrackHistorySnapshotQuerySet, DateQuerySet
 from .utils import has_int_pk, ContributorList
-
 
 # Import model in a different way, because of circular imports
 TrackHistoryRecord = SimpleLazyObject(lambda: apps.get_model(__package__, 'TrackHistoryRecord'))
 
 
-class TrackHistoryDescriptor(object):
-    def __init__(self, model):
-        self.model = model
-
-    def __get__(self, instance, owner):
-        if instance is None:
-            return TrackHistoryManager(self.model)
-        return TrackHistoryManager(self.model, instance)
+class TrackHistorySnapshotManager(BaseManager.from_queryset(TrackHistorySnapshotQuerySet)):
+    pass
 
 
-class DateManager(Manager):
-    def after_date(self, date):
-        return self.in_dates(from_date=date)
-
-    def before_date(self, date):
-        return self.in_dates(to_date=date)
-
-    def in_dates(self, from_date=None, to_date=None):
-        qs = self.get_queryset()
-
-        if from_date:
-            qs = qs.filter(date_created__gte=from_date)
-
-        if to_date:
-            qs = qs.filter(date_created__lte=to_date)
-
-        return qs
+class TrackHistoryRecordManager(BaseManager.from_queryset(DateQuerySet)):
+    pass
 
 
-class TrackHistoryManager(DateManager):
+class TrackHistoryManager(BaseManager.from_queryset(DateQuerySet)):
     def __init__(self, model, instance=None):
         super(TrackHistoryManager, self).__init__()
         self.model = model
@@ -106,29 +85,11 @@ class TrackHistoryManager(DateManager):
         return thr.user if thr else None
 
 
-class CreateAndReadOnlyManager(object):
-    def get_or_create(self, *args, **kwargs):
-        raise NotImplementedError
+class TrackHistoryDescriptor(object):
+    def __init__(self, model):
+        self.model = model
 
-    def delete(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def update(self, *args, **kwargs):
-        raise NotImplementedError
-
-
-class TrackHistoryRecordManager(CreateAndReadOnlyManager, DateManager):
-    pass
-
-
-class TrackHistorySnapshotManager(CreateAndReadOnlyManager, Manager):
-    _queryset_class = SnapshotQuerySet
-
-    def bulk_create(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def create(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def create_snapshot_for_model(self, **kwargs):
-        return self.get_queryset().create_snapshot_for_model(**kwargs)
+    def __get__(self, instance, owner):
+        if instance is None:
+            return TrackHistoryManager(self.model)
+        return TrackHistoryManager(self.model, instance)
