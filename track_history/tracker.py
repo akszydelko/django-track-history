@@ -1,10 +1,11 @@
 from __future__ import unicode_literals
+
 import threading
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import FileField
+from django.db.models.signals import post_save, pre_delete
 from django.utils.encoding import force_text
-from track_history.signals import save_signals, delete_signals
 
 from .utils import has_int_pk, get_track_history_record_model
 
@@ -78,13 +79,12 @@ class TrackHelper(object):
         if self.tracked_instance is not instance:
             raise AssertionError('Something is wrong with tracked instance, got different object then expected.')
 
-        record_type = self.history_record_model.RECORD_TYPES.modified
-
-        if signal in save_signals:
-            if kwargs.get('created', False):
-                record_type = self.history_record_model.RECORD_TYPES.created
-        elif signal in delete_signals:
+        if signal == pre_delete:
             record_type = self.history_record_model.RECORD_TYPES.deleted
+        elif signal == post_save and kwargs.get('created', False):
+            record_type = self.history_record_model.RECORD_TYPES.created
+        else:
+            record_type = self.history_record_model.RECORD_TYPES.modified
 
         self.create_history_track_record(record_type, kwargs.get('using', None))
 

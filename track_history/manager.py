@@ -106,7 +106,7 @@ class TrackHistoryManager(DateManager):
         return thr.user if thr else None
 
 
-class CreateAndReadOnlyManager(Manager):
+class CreateAndReadOnlyManager(object):
     def get_or_create(self, *args, **kwargs):
         raise NotImplementedError
 
@@ -121,7 +121,7 @@ class TrackHistoryRecordManager(CreateAndReadOnlyManager, DateManager):
     pass
 
 
-class TrackHistorySnapshotManager(CreateAndReadOnlyManager):
+class TrackHistorySnapshotManager(CreateAndReadOnlyManager, Manager):
     def __init__(self, *args, **kwargs):
         super(TrackHistorySnapshotManager, self).__init__(*args, **kwargs)
         self._queryset_class = SnapshotQuerySet

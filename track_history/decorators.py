@@ -1,8 +1,8 @@
 from __future__ import unicode_literals
 from functools import partial
 
-from .handlers import store_initial, action_receiver, DeferredSignalWrapper
-from .signals import init_signals, save_signals, delete_signals
+from .handlers import store_initial, action_receiver, TrackHistoryModelWrapper
+from django.db.models.signals import post_init, post_save, pre_delete
 from .manager import TrackHistoryDescriptor
 from .settings import TH_DEFAULT_EXCLUDE_FIELDS
 
@@ -21,16 +21,17 @@ def track_changes(model=None, fields=(), exclude=()):
     }
 
     # Connect to signals
-    for signal in init_signals:
-        signal.connect(partial(store_initial, **attrs), sender=model, weak=False,
-                       dispatch_uid='django-track-history-%s' % model.__name__)
+    post_init.connect(partial(store_initial, **attrs), sender=model, weak=False,
+                      dispatch_uid='django-track-history-%s' % model.__name__)
 
-    for signal in save_signals + delete_signals:
-        signal.connect(action_receiver, sender=model, weak=False,
-                       dispatch_uid='django-track-history-%s' % model.__name__)
+    post_save.connect(action_receiver, sender=model, weak=False,
+                      dispatch_uid='django-track-history-%s' % model.__name__)
 
-    # Hack model to inherent from DeferredSignalWrapper
-    model.__bases__ = (DeferredSignalWrapper,) + model.__bases__
+    pre_delete.connect(action_receiver, sender=model, weak=False,
+                      dispatch_uid='django-track-history-%s' % model.__name__)
+
+    # Hack model to inherent from TrackHistoryModelWrapper
+    model.__bases__ = (TrackHistoryModelWrapper,) + model.__bases__
 
     # Add query manager
     descriptor = TrackHistoryDescriptor(model)
