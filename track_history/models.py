@@ -21,7 +21,7 @@ class TrackHistoryFullSnapshot(models.Model):
     objects = TrackHistorySnapshotManager()
 
     def __str__(self):
-        return "Fill snapshot of track history record with id %d" % self.track_history_record_id
+        return "Fill snapshot of track history record with id %d" % self.id
 
     class Meta:
         app_label = 'track_history'

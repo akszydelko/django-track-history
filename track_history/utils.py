@@ -1,3 +1,6 @@
+import importlib
+
+from django.conf import settings
 from django.db import models
 
 
@@ -18,3 +21,9 @@ def has_int_pk(model):
             isinstance(pk, models.ForeignKey) and has_int_pk(pk.rel.to)
         )
     )
+
+
+def get_track_history_record_model():
+    model_path = getattr(settings, 'TH_RECORD_MODEL', 'track_history.models.TrackHistoryRecord')
+    module, model_class = model_path.rsplit('.', 1)
+    return getattr(importlib.import_module(module), model_class)

@@ -7,7 +7,7 @@ class CustomDeletionCollector(Collector):
     def delete(self):
         # send pre_delete signals for deferred objects
         for model, obj in self.instances_with_model():
-            if not model._meta.auto_created and model._deferred:
+            if not model._meta.auto_created and getattr(model, '_deferred', False):
                 th_pre_delete_deferred.send(sender=model._meta.concrete_model, instance=obj, using=self.using)
 
         super(CustomDeletionCollector, self).delete()

@@ -3,12 +3,10 @@ import threading
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import FileField
-from django.db.models.query_utils import DeferredAttribute
 from django.utils.encoding import force_text
 from track_history.signals import save_signals, delete_signals
 
-from .models import TrackHistoryRecord
-from .utils import has_int_pk
+from .utils import has_int_pk, get_track_history_record_model
 
 
 class TrackHelper(object):
@@ -16,6 +14,7 @@ class TrackHelper(object):
     initial_values = {}
 
     def __init__(self, tracked_instance, fields, exclude):
+        self.history_record_model = get_track_history_record_model()
         self.tracked_instance = tracked_instance
         self.fields = fields
         self.exclude = exclude
@@ -45,7 +44,7 @@ class TrackHelper(object):
         return fields
 
     def store_current_state(self, record_type=None):
-        if record_type == TrackHistoryRecord.RECORD_TYPES.deleted or not self.tracked_instance.pk:
+        if record_type == self.history_record_model.RECORD_TYPES.deleted or not self.tracked_instance.pk:
             self.initial_values = {}
         else:
             self.initial_values = self.get_current_state()
@@ -53,9 +52,8 @@ class TrackHelper(object):
     def get_tracked_fields(self):
         fields = self.tracked_instance._meta.concrete_model._meta.local_fields
 
-        if self.tracked_instance._deferred:
-            fields = filter(lambda field: not isinstance(
-                self.tracked_instance.__class__.__dict__.get(field.attname), DeferredAttribute), fields)
+        deferred_fields = self.tracked_instance.get_deferred_fields()
+        fields = filter(lambda field: field.attname not in deferred_fields, fields)
 
         if self.fields:
             fields = filter(lambda x: x.name in self.fields, fields)
@@ -71,22 +69,22 @@ class TrackHelper(object):
         from the previous state to the current state.
         """
         old = self.initial_values
-        new = self.get_current_state() if record_type != TrackHistoryRecord.RECORD_TYPES.deleted else {}
-        d = {key: (old.get(key, None), current) for key, current in new.iteritems() if current != old.get(key, None)}
-        d.update({key: (was, new.get(key, None)) for key, was in old.iteritems() if was != new.get(key, None)})
+        new = self.get_current_state() if record_type != self.history_record_model.RECORD_TYPES.deleted else {}
+        d = {key: (old.get(key, None), current) for key, current in new.items() if current != old.get(key, None)}
+        d.update({key: (was, new.get(key, None)) for key, was in old.items() if was != new.get(key, None)})
         return d
 
     def signal_receiver(self, instance, signal, **kwargs):
         if self.tracked_instance is not instance:
             raise AssertionError('Something is wrong with tracked instance, got different object then expected.')
 
-        record_type = TrackHistoryRecord.RECORD_TYPES.modified
+        record_type = self.history_record_model.RECORD_TYPES.modified
 
         if signal in save_signals:
             if kwargs.get('created', False):
-                record_type = TrackHistoryRecord.RECORD_TYPES.created
+                record_type = self.history_record_model.RECORD_TYPES.created
         elif signal in delete_signals:
-            record_type = TrackHistoryRecord.RECORD_TYPES.deleted
+            record_type = self.history_record_model.RECORD_TYPES.deleted
 
         self.create_history_track_record(record_type, kwargs.get('using', None))
 
@@ -109,7 +107,7 @@ class TrackHelper(object):
 
     def create_history_track_record(self, record_type, db=None):
         record_data = self.get_history_track_data(record_type, db)
-        TrackHistoryRecord.objects.create(**record_data)
+        self.history_record_model.objects.create(**record_data)
         self.store_current_state(record_type)
 
     def get_related_user(self):

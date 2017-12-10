@@ -20,12 +20,12 @@ def action_receiver(sender, instance, signal, **kwargs):
 class DeferredSignalWrapper(models.Model):
     def __init__(self, *args, **kwargs):
         super(DeferredSignalWrapper, self).__init__(*args, **kwargs)
-        if self._deferred:
+        if getattr(self, '_deferred', False):
             th_post_init_deferred.send(sender=self._meta.concrete_model, instance=self)
 
     def save_base(self, *args, **kwargs):
         super(DeferredSignalWrapper, self).save_base(*args, **kwargs)
-        if self._deferred:
+        if getattr(self, '_deferred', False):
             th_post_save_deferred.send(sender=self._meta.concrete_model, instance=self, created=False,
                                        update_fields=kwargs.get('update_fields', None), using=kwargs.get('using', None))
 
@@ -34,15 +34,15 @@ class DeferredSignalWrapper(models.Model):
         with transaction.atomic(using=kwargs.get('using', None)):
             super(DeferredSignalWrapper, self).save(*args, **kwargs)
 
-    def delete(self, using=None):
+    def delete(self, using=None, *args, **kwargs):
         using = using or router.db_for_write(self.__class__, instance=self)
         assert self._get_pk_val() is not None, (
             "%s object can't be deleted because its %s attribute is set to None." %
             (self._meta.object_name, self._meta.pk.attname)
         )
 
-        collector = CustomDeletionCollector(using=using)  # The only modification, the rest copied from models.Model
-        collector.collect([self])
+        collector = CustomDeletionCollector(using=using)  # This
+        collector.collect([self], *args, **kwargs)  # And this were the only modifications, the rest copied from models.Model
         collector.delete()
 
     class Meta:
