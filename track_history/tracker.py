@@ -9,9 +9,10 @@ from django.utils.encoding import force_text
 
 from .utils import has_int_pk, get_track_history_record_model
 
+_thread_local = threading.local()
+
 
 class TrackHelper(object):
-    thread = threading.local()
     initial_values = {}
 
     def __init__(self, tracked_instance, fields, exclude):
@@ -112,9 +113,5 @@ class TrackHelper(object):
 
     def get_related_user(self):
         """Get the modifying user from middleware."""
-        try:
-            if self.thread.user.is_authenticated():
-                return self.thread.user
-            return None
-        except AttributeError:
-            return None
+        user = getattr(_thread_local, 'user', None)
+        return user if user and user.is_authenticated else None
