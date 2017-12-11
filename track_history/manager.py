@@ -33,27 +33,24 @@ class TrackHistoryManager(BaseManager.from_queryset(DateQuerySet)):
         return ContentType.objects.get_for_model(self.model)
 
     def get_queryset(self):
-        defer = []
         filters = {
             'content_type': self.get_class_content_type()
         }
 
         if self.instance:
             if has_int_pk(self.model):
-                defer.append('object_id')
                 filters['object_id_int'] = int(self.instance.pk)
             else:
-                defer.append('object_id_int')
                 filters['object_id'] = force_text(self.instance.pk)
 
-        return TrackHistoryRecord.objects.defer(*defer).filter(**filters)
+        return TrackHistoryRecord.objects.filter(**filters)
 
     # Fields
     def get_field_history(self, field_name):
         return self.get_queryset().filter(changes__has=field_name)
 
     # Editors
-    def get_contributors(self, user_query_only=()):
+    def get_editors(self, user_query_only=()):
         if isinstance(user_query_only, (list, tuple)):
             user_query_only = ['user__' + x for x in user_query_only]
 
