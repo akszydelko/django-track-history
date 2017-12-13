@@ -3,9 +3,9 @@ from __future__ import unicode_literals
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.postgres.fields import JSONField
 from django.db import models, OperationalError
 from django.utils.encoding import python_2_unicode_compatible
-from django_pgjsonb import JSONField as JSONBField
 from django.utils.translation import ugettext_lazy as _
 from model_utils.choices import Choices
 
@@ -16,7 +16,7 @@ UserModel = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
 @python_2_unicode_compatible
 class TrackHistoryFullSnapshot(models.Model):
-    history_data = JSONBField()
+    history_data = JSONField()
 
     objects = TrackHistorySnapshotManager()
 
@@ -45,7 +45,7 @@ class TrackHistoryRecord(models.Model):
     user = models.ForeignKey(UserModel, null=True, on_delete=models.SET_NULL, verbose_name=_('user'),
                              help_text='The user who created this record.', related_name='+')
     record_type = models.PositiveSmallIntegerField(choices=RECORD_TYPES)
-    changes = JSONBField(default={})
+    changes = JSONField(default=dict)
 
     # A link to the current instance
     current_instance = GenericForeignKey(ct_field='content_type', fk_field='object_id')

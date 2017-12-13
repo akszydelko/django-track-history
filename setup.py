@@ -39,7 +39,6 @@ setup(
     keywords='django track history',
     packages=find_packages(exclude=['tests']),
     install_requires=[
-        'django>=1.10',
-        'django-pgjsonb>=0.0.30'
+        'django>=1.10'
     ],
 )

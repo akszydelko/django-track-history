@@ -47,7 +47,7 @@ class TrackHistoryManager(BaseManager.from_queryset(DateQuerySet)):
 
     # Fields
     def get_field_history(self, field_name):
-        return self.get_queryset().filter(changes__has=field_name)
+        return self.get_queryset().filter(changes__has_key=field_name)
 
     # Editors
     def get_editors(self, user_query_only=()):
