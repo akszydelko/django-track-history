@@ -23,7 +23,7 @@ class Author(models.Model):
 class Book(models.Model):
     name = models.CharField(max_length=255)
     isbn_number = models.CharField(max_length=30)
-    author = models.ForeignKey(Author)
+    author = models.ForeignKey(Author, on_delete=models.PROTECT)
 
     def __str__(self):
         return self.name

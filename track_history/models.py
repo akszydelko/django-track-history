@@ -35,13 +35,13 @@ class TrackHistoryRecord(models.Model):
         (2, 'deleted', _('Deleted'))
     )
 
-    full_snapshot = models.OneToOneField(TrackHistoryFullSnapshot, primary_key=True)
+    full_snapshot = models.OneToOneField(TrackHistoryFullSnapshot, primary_key=True, on_delete=models.PROTECT)
     date_created = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name=_('date created'),
                                         help_text='The date and time this record was created.')
     object_id = models.TextField(help_text='Primary key of the model under track history control.')
     object_id_int = models.IntegerField(blank=True, null=True, db_index=True,
                                         help_text='An indexed, integer version of the stored model\'s primary key, used for faster lookups.')
-    content_type = models.ForeignKey(ContentType, help_text='Content type of the model under track history control.')
+    content_type = models.ForeignKey(ContentType, help_text='Content type of the model under track history control.', on_delete=models.PROTECT)
     user = models.ForeignKey(UserModel, null=True, on_delete=models.SET_NULL, verbose_name=_('user'),
                              help_text='The user who created this record.', related_name='+')
     record_type = models.PositiveSmallIntegerField(choices=RECORD_TYPES)
