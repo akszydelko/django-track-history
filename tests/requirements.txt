@@ -1,2 +1,2 @@
-Django==1.11.6
+Django==1.11.28
 django-model-utils==3.0.0
