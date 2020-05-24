@@ -1,12 +1,9 @@
-from __future__ import unicode_literals
-
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.fields import JSONField
 from django.db import models, OperationalError
-from django.utils.encoding import python_2_unicode_compatible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from model_utils.choices import Choices
 
 from .manager import TrackHistorySnapshotManager, TrackHistoryRecordManager
@@ -14,7 +11,6 @@ from .manager import TrackHistorySnapshotManager, TrackHistoryRecordManager
 UserModel = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
 
-@python_2_unicode_compatible
 class TrackHistoryFullSnapshot(models.Model):
     history_data = JSONField()
 
@@ -27,7 +23,6 @@ class TrackHistoryFullSnapshot(models.Model):
         app_label = 'track_history'
 
 
-@python_2_unicode_compatible
 class TrackHistoryRecord(models.Model):
     RECORD_TYPES = Choices(
         (0, 'created', _('Created')),
@@ -38,7 +33,7 @@ class TrackHistoryRecord(models.Model):
     full_snapshot = models.OneToOneField(TrackHistoryFullSnapshot, primary_key=True, on_delete=models.PROTECT)
     date_created = models.DateTimeField(auto_now_add=True, db_index=True, verbose_name=_('date created'),
                                         help_text='The date and time this record was created.')
-    object_id = models.TextField(help_text='Primary key of the model under track history control.')
+    object_id = models.TextField(db_index=True, help_text='Primary key of the model under track history control.')
     object_id_int = models.IntegerField(blank=True, null=True, db_index=True,
                                         help_text='An indexed, integer version of the stored model\'s primary key, used for faster lookups.')
     content_type = models.ForeignKey(ContentType, help_text='Content type of the model under track history control.', on_delete=models.PROTECT)
@@ -62,7 +57,7 @@ class TrackHistoryRecord(models.Model):
         if not snapshot_id:
             raise OperationalError('Snapshot was not saved properly.')
         self.full_snapshot_id = snapshot_id
-        super(TrackHistoryRecord, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     class Meta:
         app_label = 'track_history'

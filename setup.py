@@ -4,10 +4,10 @@ from track_history import __version__
 
 long_description = """
     A simple model change tracking for Django.
-    
+
     More on: https://github.com/akszydelko/django-track-history
-    
-    Copyright (c) 2017, Arkadiusz Szydełko All rights reserved.
+
+    Copyright (c) 2020, Arkadiusz Szydełko All rights reserved.
 
     Licensed under BSD 3-Clause License
     """
@@ -28,17 +28,18 @@ setup(
         'Environment :: Web Environment',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Framework :: Django',
-        'Framework :: Django :: 1.10',
+        'Framework :: Django :: 2.0',
+        'Framework :: Django :: 2.1',
+        'Framework :: Django :: 2.2',
+        'Framework :: Django :: 3.0',
     ],
     keywords='django track history',
     packages=find_packages(exclude=['tests']),
     install_requires=[
-        'django>=1.10'
+        'django>=2.0'
     ],
 )
