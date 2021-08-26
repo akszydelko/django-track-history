@@ -9,7 +9,7 @@ from django.utils.encoding import force_text
 
 from .utils import has_int_pk, get_track_history_record_model
 
-from .settings import DJANGO_SAFEDELETE_INSTALLED, pre_softdelete
+from .settings import DJANGO_SAFEDELETE_INSTALLED, pre_softdelete, SafeDeleteModel
 
 _thread_local = threading.local()
 
@@ -48,8 +48,12 @@ class TrackHelper(object):
         return fields
 
     def store_current_state(self, record_type=None):
-        if (record_type == self.history_record_model.RECORD_TYPES.deleted and not DJANGO_SAFEDELETE_INSTALLED) \
-            or not self.tracked_instance.pk:
+        safedelete_model: bool = DJANGO_SAFEDELETE_INSTALLED and isinstance(self.tracked_instance, SafeDeleteModel)
+        instance_created: bool = self.tracked_instance.pk is None
+        instance_deleted: bool = record_type == self.history_record_model.RECORD_TYPES.deleted
+
+        if instance_created or (instance_deleted and not safedelete_model):
+            # we don't want to clear initial_values for soft-delete
             self.initial_values = {}
         else:
             self.initial_values = self.get_current_state()
@@ -83,10 +87,16 @@ class TrackHelper(object):
         if self.tracked_instance is not instance:
             raise AssertionError('Something is wrong with tracked instance, got different object then expected.')
 
+        skip_post_save_signal: bool = False
+        if DJANGO_SAFEDELETE_INSTALLED:
+            if signal == post_save and not kwargs.get('created', False) \
+                and kwargs.get("update_fields", []) == ["deleted"] \
+                and instance.deleted is not None:
+                skip_post_save_signal = True
+
         if signal == pre_delete or (DJANGO_SAFEDELETE_INSTALLED and signal == pre_softdelete):
             record_type = self.history_record_model.RECORD_TYPES.deleted
-        elif DJANGO_SAFEDELETE_INSTALLED and signal == post_save and kwargs.get('created', False)\
-            and kwargs.get("update_fields", []) == ["deleted"] and instance.deleted is not None:
+        elif skip_post_save_signal:
             # skipping post-save signal triggered by django-safedelete during soft deleting an instance
             return
         elif signal == post_save and kwargs.get('created', False):
