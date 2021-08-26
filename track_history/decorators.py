@@ -4,7 +4,7 @@ from functools import partial
 from .handlers import store_initial, action_receiver, TrackHistoryModelWrapper
 from django.db.models.signals import post_init, post_save, pre_delete
 from .manager import TrackHistoryDescriptor
-from .settings import TH_DEFAULT_EXCLUDE_FIELDS
+from .settings import TH_DEFAULT_EXCLUDE_FIELDS, DJANGO_SAFEDELETE_INSTALLED, pre_softdelete
 
 
 def track_changes(model=None, fields=(), exclude=()):
@@ -29,6 +29,10 @@ def track_changes(model=None, fields=(), exclude=()):
 
     pre_delete.connect(action_receiver, sender=model, weak=False,
                       dispatch_uid='django-track-history-{}'.format(model.__name__))
+
+    if DJANGO_SAFEDELETE_INSTALLED:
+        pre_softdelete.connect(action_receiver, sender=model, weak=False,
+                       dispatch_uid='django-track-history-{}'.format(model.__name__))
 
     # Hack model to inherent from TrackHistoryModelWrapper
     model.__bases__ = (TrackHistoryModelWrapper,) + model.__bases__
