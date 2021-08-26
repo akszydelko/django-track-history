@@ -88,8 +88,9 @@ class TrackHelper(object):
             raise AssertionError('Something is wrong with tracked instance, got different object then expected.')
 
         skip_post_save_signal: bool = False
+        created = kwargs.get("created", False)
         if DJANGO_SAFEDELETE_INSTALLED:
-            if signal == post_save and not kwargs.get('created', False) \
+            if signal == post_save and not created \
                 and kwargs.get("update_fields", []) == ["deleted"] \
                 and instance.deleted is not None:
                 skip_post_save_signal = True
@@ -99,7 +100,7 @@ class TrackHelper(object):
         elif skip_post_save_signal:
             # skipping post-save signal triggered by django-safedelete during soft deleting an instance
             return
-        elif signal == post_save and kwargs.get('created', False):
+        elif signal == post_save and created:
             record_type = self.history_record_model.RECORD_TYPES.created
         else:
             record_type = self.history_record_model.RECORD_TYPES.modified
