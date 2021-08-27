@@ -7,7 +7,7 @@ long_description = """
 
     More on: https://github.com/akszydelko/django-track-history
 
-    Copyright (c) 2020, Arkadiusz Szydełko All rights reserved.
+    Copyright (c) 2021, Arkadiusz Szydełko All rights reserved.
 
     Licensed under BSD 3-Clause License
     """
