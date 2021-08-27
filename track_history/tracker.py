@@ -26,10 +26,14 @@ class TrackHelper(object):
         self.store_current_state()
 
     def prepare_attribute_for_json(self, field):
-        if hasattr(self.tracked_instance, '_th_prepare_{}_for_json'.format(field.name)):
-            return getattr(self.tracked_instance, '_th_prepare_{}_for_json'.format(field.name))()
-        elif hasattr(self.tracked_instance, '_th_prepare_attribute_for_json'):
-            return getattr(self.tracked_instance, '_th_prepare_attribute_for_json')(field)
+        if hasattr(self.tracked_instance, "_th_prepare_{}_for_json".format(field.name)):
+            return getattr(
+                self.tracked_instance, "_th_prepare_{}_for_json".format(field.name)
+            )()
+        elif hasattr(self.tracked_instance, "_th_prepare_attribute_for_json"):
+            return getattr(self.tracked_instance, "_th_prepare_attribute_for_json")(
+                field
+            )
 
         # It's always safe to access the field attribute name, it refers to simple types that are immediately
         # available on the instance.
@@ -48,9 +52,13 @@ class TrackHelper(object):
         return fields
 
     def store_current_state(self, record_type=None):
-        safedelete_model: bool = DJANGO_SAFEDELETE_INSTALLED and isinstance(self.tracked_instance, SafeDeleteModel)
+        safedelete_model: bool = DJANGO_SAFEDELETE_INSTALLED and isinstance(
+            self.tracked_instance, SafeDeleteModel
+        )
         instance_created: bool = self.tracked_instance.pk is None
-        instance_deleted: bool = record_type == self.history_record_model.RECORD_TYPES.deleted
+        instance_deleted: bool = (
+            record_type == self.history_record_model.RECORD_TYPES.deleted
+        )
 
         if instance_created or (instance_deleted and not safedelete_model):
             # we don't want to clear initial_values for soft-delete
@@ -78,24 +86,45 @@ class TrackHelper(object):
         from the previous state to the current state.
         """
         old = self.initial_values
-        new = self.get_current_state() if record_type != self.history_record_model.RECORD_TYPES.deleted else {}
-        d = {key: (old.get(key, None), current) for key, current in new.items() if current != old.get(key, None)}
-        d.update({key: (was, new.get(key, None)) for key, was in old.items() if was != new.get(key, None)})
+        new = (
+            self.get_current_state()
+            if record_type != self.history_record_model.RECORD_TYPES.deleted
+            else {}
+        )
+        d = {
+            key: (old.get(key, None), current)
+            for key, current in new.items()
+            if current != old.get(key, None)
+        }
+        d.update(
+            {
+                key: (was, new.get(key, None))
+                for key, was in old.items()
+                if was != new.get(key, None)
+            }
+        )
         return d
 
     def signal_receiver(self, instance, signal, **kwargs):
         if self.tracked_instance is not instance:
-            raise AssertionError('Something is wrong with tracked instance, got different object then expected.')
+            raise AssertionError(
+                "Something is wrong with tracked instance, got different object then expected."
+            )
 
+        created: bool = kwargs.get("created", False)
         skip_post_save_signal: bool = False
-        created = kwargs.get("created", False)
-        if DJANGO_SAFEDELETE_INSTALLED:
-            if signal == post_save and not created \
-                and kwargs.get("update_fields", []) == ["deleted"] \
-                and instance.deleted is not None:
-                skip_post_save_signal = True
+        if (
+            DJANGO_SAFEDELETE_INSTALLED
+            and signal == post_save
+            and not created
+            and kwargs.get("update_fields", []) == ["deleted"]
+            and instance.deleted is not None
+        ):
+            skip_post_save_signal = True
 
-        if signal == pre_delete or (DJANGO_SAFEDELETE_INSTALLED and signal == pre_softdelete):
+        if signal == pre_delete or (
+            DJANGO_SAFEDELETE_INSTALLED and signal == pre_softdelete
+        ):
             record_type = self.history_record_model.RECORD_TYPES.deleted
         elif skip_post_save_signal:
             # skipping post-save signal triggered by django-safedelete during soft deleting an instance
@@ -105,23 +134,25 @@ class TrackHelper(object):
         else:
             record_type = self.history_record_model.RECORD_TYPES.modified
 
-        self.create_history_track_record(record_type, kwargs.get('using', None))
+        self.create_history_track_record(record_type, kwargs.get("using", None))
 
     def get_history_track_data(self, record_type, db=None):
         """Creates the version data to be saved to the history track record model."""
         object_id = force_text(self.tracked_instance.pk)
-        content_type = ContentType.objects.db_manager(db).get_for_model(self.tracked_instance)
+        content_type = ContentType.objects.db_manager(db).get_for_model(
+            self.tracked_instance
+        )
         if has_int_pk(self.tracked_instance.__class__):
             object_id_int = int(self.tracked_instance.pk)
         else:
             object_id_int = None
         return {
-            'object_id': object_id,
-            'object_id_int': object_id_int,
-            'content_type': content_type,
-            'record_type': record_type,
-            'changes': self.changes(record_type),
-            'user': self.get_related_user()
+            "object_id": object_id,
+            "object_id_int": object_id_int,
+            "content_type": content_type,
+            "record_type": record_type,
+            "changes": self.changes(record_type),
+            "user": self.get_related_user(),
         }
 
     def create_history_track_record(self, record_type, db=None):
@@ -131,5 +162,5 @@ class TrackHelper(object):
 
     def get_related_user(self):
         """Get the modifying user from middleware."""
-        user = getattr(_thread_local, 'user', None)
+        user = getattr(_thread_local, "user", None)
         return user if user and user.is_authenticated else None
