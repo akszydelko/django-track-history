@@ -9,7 +9,12 @@ from django.utils.encoding import force_text
 
 from .utils import has_int_pk, get_track_history_record_model
 
-from .settings import DJANGO_SAFEDELETE_INSTALLED, pre_softdelete, SafeDeleteModel
+from .settings import (
+    DJANGO_SAFEDELETE_INSTALLED,
+    pre_softdelete,
+    SafeDeleteModel,
+    post_undelete,
+)
 
 _thread_local = threading.local()
 
@@ -60,7 +65,10 @@ class TrackHelper(object):
             record_type == self.history_record_model.RECORD_TYPES.deleted
         )
 
-        if instance_created or (instance_deleted and not safedelete_model):
+        if (
+            instance_created
+            or (instance_deleted and not safedelete_model)
+        ):
             # we don't want to clear initial_values for soft-delete
             self.initial_values = {}
         else:
@@ -85,7 +93,11 @@ class TrackHelper(object):
         Returns a ``field -> (previous value, current value)`` dict of changes
         from the previous state to the current state.
         """
-        old = self.initial_values
+        old = (
+            self.initial_values
+            if record_type != self.history_record_model.RECORD_TYPES.undeleted
+            else {}  # for undelete, we want to compare new values with None - otherwise there will be no changes
+        )
         new = (
             self.get_current_state()
             if record_type != self.history_record_model.RECORD_TYPES.deleted
@@ -131,6 +143,8 @@ class TrackHelper(object):
             return
         elif signal == post_save and created:
             record_type = self.history_record_model.RECORD_TYPES.created
+        elif signal == post_undelete:
+            record_type = self.history_record_model.RECORD_TYPES.undeleted
         else:
             record_type = self.history_record_model.RECORD_TYPES.modified
 

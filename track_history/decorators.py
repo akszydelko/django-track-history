@@ -8,6 +8,7 @@ from .settings import (
     TH_DEFAULT_EXCLUDE_FIELDS,
     DJANGO_SAFEDELETE_INSTALLED,
     pre_softdelete,
+    post_undelete,
 )
 
 
@@ -50,6 +51,12 @@ def track_changes(model=None, fields=(), exclude=()):
 
     if DJANGO_SAFEDELETE_INSTALLED:
         pre_softdelete.connect(
+            action_receiver,
+            sender=model,
+            weak=False,
+            dispatch_uid="django-track-history-{}".format(model.__name__),
+        )
+        post_undelete.connect(
             action_receiver,
             sender=model,
             weak=False,
