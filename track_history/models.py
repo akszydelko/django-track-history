@@ -28,6 +28,7 @@ class TrackHistoryRecord(models.Model):
         (0, "created", _("Created")),
         (1, "modified", _("Modified")),
         (2, "deleted", _("Deleted")),
+        (3, "undeleted", _("Undeleted")),
     )
 
     full_snapshot = models.OneToOneField(
